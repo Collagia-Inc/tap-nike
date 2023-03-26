@@ -1,0 +1,32 @@
+version: 1
+send_anonymous_usage_stats: true
+project_id: tap-nike
+default_environment: test
+environments:
+- name: test
+plugins:
+  extractors:
+  - name: tap-nike
+    namespace: tap_nike
+    pip_url: -e .
+    capabilities:
+    - state
+    - catalog
+    - discover
+    - about
+    - stream-maps
+    settings:
+    - name: username
+    - name: password
+      kind: password
+    - name: start_date
+      value: '2010-01-01T00:00:00Z'
+    config:
+      start_date: '2010-01-01T00:00:00Z'
+  loaders:
+  - name: target-jsonl
+    variant: andyh1203
+    pip_url: target-jsonl
+  - name: target-csv
+    variant: hotgluexyz
+    pip_url: git+https://github.com/hotgluexyz/target-csv.git
