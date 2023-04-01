@@ -19,7 +19,7 @@ class UsersStream(nikeStream):
 
     name = "nike"
     path = "product_feed/threads/v2"
-    primary_keys = ["squarishURL"]
+    primary_keys = ["squarishURL", "modificationDate"]
     replication_key = "modificationDate"
     # Optionally, you may also use `schema_filepath` in place of `schema`:
     schema = th.PropertiesList(

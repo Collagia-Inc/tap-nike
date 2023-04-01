@@ -19,7 +19,6 @@ class nikeStream(RESTStream):
     # TODO: Set the API's base URL here:
     url_base = "https://api.nike.com/"
 
-
     records_jsonpath = "$[*]"  # Or override `parse_response`.
     next_page_token = ""  # Or override `get_next_page_token`.
 
@@ -83,8 +82,6 @@ class nikeStream(RESTStream):
         """
         params: dict = {}
         channel_id = self.config["channel_id"]
-        "CHANNEL_ID"
-        print(channel_id)
         params["filter"] = f'language(en),marketplace(US),channelId({channel_id}),inStock(false),includeExpired(true)'
         return params
 
@@ -111,9 +108,6 @@ class nikeStream(RESTStream):
                             flatten_dict["genders"] = product_info["merchProduct"]["genders"]
                             flatten_dict["sportTags"] = product_info["merchProduct"]["sportTags"]
                             flatten_dict["modificationDate"] = product_info["merchProduct"]["modificationDate"]
-                            # flatten_dict["msrp"] = ""
-                            # flatten_dict["fullPrice"] = ""
-                            # flatten_dict["currentPrice"] = ""
                             flatten_dict["view"] = ""
                             flatten_dict["squarishURL"] = ""
                         except Exception as e:
@@ -142,6 +136,14 @@ class nikeStream(RESTStream):
                                                         flatten_dict["view"] = n_node["properties"]["squarish"]["view"]
                                                     if k == "url":
                                                         flatten_dict["squarishURL"] = n_node["properties"]["squarish"]["url"]
-                                            yield flatten_dict
+                                            if not self.tap_state.get("identifiers"):
+                                                self.tap_state["identifiers"] = [flatten_dict["squarishURL"] +
+                                                                                 flatten_dict["modificationDate"]]
+                                                yield flatten_dict
+                                            elif flatten_dict["squarishURL"] + flatten_dict["modificationDate"] not in \
+                                                    self.tap_state["identifiers"]:
+                                                self.tap_state["identifiers"].append(flatten_dict["squarishURL"] +
+                                                                                     flatten_dict["modificationDate"])
+                                                yield flatten_dict
                                         except Exception as e:
                                             pass
