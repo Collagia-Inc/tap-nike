@@ -18,13 +18,7 @@ class nikeStream(RESTStream):
 
     # TODO: Set the API's base URL here:
     url_base = "https://api.nike.com/"
-    #url_base = "https://api.nike.com/product_feed/threads/v2?filter=language(en)&filter=marketplace(US)&filter=channelId(d9a5bc42-4b9c-4976-858a-f159cf99c647)&filter=inStock(false)&filter=includeExpired(true)"
 
-    # OR use a dynamic url_base:
-    # @property
-    # def url_base(self) -> str:
-    #     """Return the API URL root, configurable via tap settings."""
-    #     return self.config["api_url"]
 
     records_jsonpath = "$[*]"  # Or override `parse_response`.
     next_page_token = ""  # Or override `get_next_page_token`.
@@ -88,7 +82,10 @@ class nikeStream(RESTStream):
             A dictionary of URL query parameters.
         """
         params: dict = {}
-        params["filter"] = "language(en),marketplace(US),channelId(d9a5bc42-4b9c-4976-858a-f159cf99c647),inStock(false),includeExpired(true)"
+        channel_id = self.config["channel_id"]
+        "CHANNEL_ID"
+        print(channel_id)
+        params["filter"] = f'language(en),marketplace(US),channelId({channel_id}),inStock(false),includeExpired(true)'
         return params
 
 
@@ -101,19 +98,50 @@ class nikeStream(RESTStream):
         Yields:
             Each record from the source.
         """
-        # TODO: Parse response body and return a set of records.
-        yield from extract_jsonpath(self.records_jsonpath, input=response.json()["objects"])
-
-    # def post_process(self, row: dict, context: dict | None = None) -> dict | None:
-    #     """As needed, append or transform raw data to match expected structure.
-    #
-    #     Args:
-    #         row: An individual record from the stream.
-    #         context: The stream context.
-    #
-    #     Returns:
-    #         The updated record dictionary, or ``None`` to skip the record.
-    #     """
-    #     # TODO: Delete this method if not needed.
-    #     print(row)
-    #     return row
+        for response_object in response.json()["objects"]:
+            flatten_dict = {}
+            for product_info in response_object["productInfo"]:
+                for k, v in product_info.items():
+                    if k == "merchProduct":
+                        try:
+                            flatten_dict["merchGroup"] = product_info["merchProduct"]["merchGroup"]
+                            flatten_dict["styleCode"] = product_info["merchProduct"]["styleCode"]
+                            flatten_dict["colorCode"] = product_info["merchProduct"]["colorCode"]
+                            flatten_dict["channels"] = product_info["merchProduct"]["channels"]
+                            flatten_dict["genders"] = product_info["merchProduct"]["genders"]
+                            flatten_dict["sportTags"] = product_info["merchProduct"]["sportTags"]
+                            flatten_dict["modificationDate"] = product_info["merchProduct"]["modificationDate"]
+                            # flatten_dict["msrp"] = ""
+                            # flatten_dict["fullPrice"] = ""
+                            # flatten_dict["currentPrice"] = ""
+                            flatten_dict["view"] = ""
+                            flatten_dict["squarishURL"] = ""
+                        except Exception as e:
+                            pass
+                    if k == "merchPrice":
+                        try:
+                            for k,v in product_info["merchPrice"].items():
+                                if k == "msrp":
+                                    flatten_dict["msrp"] = product_info["merchPrice"]["msrp"]
+                                if k == "fullPrice":
+                                    flatten_dict["fullPrice"] = product_info["merchPrice"]["fullPrice"]
+                                if k == "currentPrice":
+                                    flatten_dict["currentPrice"] = product_info["merchPrice"]["currentPrice"]
+                        except Exception as e:
+                            pass
+                if response_object["publishedContent"]:
+                    for node in response_object["publishedContent"]["nodes"]:
+                        for k, v in node.items():
+                            if k == "nodes":
+                                for n_node in node["nodes"]:
+                                    if n_node["properties"]:
+                                        try:
+                                            if n_node["properties"]["squarish"]:
+                                                for k, v in n_node["properties"]["squarish"].items():
+                                                    if k == "view":
+                                                        flatten_dict["view"] = n_node["properties"]["squarish"]["view"]
+                                                    if k == "url":
+                                                        flatten_dict["squarishURL"] = n_node["properties"]["squarish"]["url"]
+                                            yield flatten_dict
+                                        except Exception as e:
+                                            pass

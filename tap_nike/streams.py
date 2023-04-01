@@ -19,16 +19,62 @@ class UsersStream(nikeStream):
 
     name = "nike"
     path = "product_feed/threads/v2"
-    primary_keys = ["id"]
-    replication_key = None
+    primary_keys = ["squarishURL"]
+    replication_key = "modificationDate"
     # Optionally, you may also use `schema_filepath` in place of `schema`:
     schema = th.PropertiesList(
         th.Property(
-            "id",
+            "squarishURL",
             th.StringType,
         ),
         th.Property(
-            "channelId",
+            "view",
             th.StringType,
+        ),
+        th.Property(
+            "modificationDate",
+            th.StringType,
+        ),
+        th.Property(
+            "merchGroup",
+            th.StringType,
+        ),
+        th.Property(
+            "styleCode",
+            th.StringType,
+        ),
+        th.Property(
+            "colorCode",
+            th.StringType,
+        ),
+        th.Property(
+            "channels",
+            th.ArrayType(
+                th.StringType
+            ),
+        ),
+        th.Property(
+            "genders",
+            th.ArrayType(
+                th.StringType
+            ),
+        ),
+        th.Property(
+            "sportTags",
+            th.ArrayType(
+                th.StringType
+            ),
+        ),
+        th.Property(
+            "msrp",
+            th.NumberType,
+        ),
+        th.Property(
+            "fullPrice",
+            th.NumberType,
+        ),
+        th.Property(
+            "currentPrice",
+            th.NumberType,
         )
     ).to_dict()
