@@ -97,53 +97,54 @@ class nikeStream(RESTStream):
         """
         for response_object in response.json()["objects"]:
             flatten_dict = {}
-            for product_info in response_object["productInfo"]:
-                for k, v in product_info.items():
-                    if k == "merchProduct":
-                        try:
-                            flatten_dict["merchGroup"] = product_info["merchProduct"]["merchGroup"]
-                            flatten_dict["styleCode"] = product_info["merchProduct"]["styleCode"]
-                            flatten_dict["colorCode"] = product_info["merchProduct"]["colorCode"]
-                            flatten_dict["channels"] = product_info["merchProduct"]["channels"]
-                            flatten_dict["genders"] = product_info["merchProduct"]["genders"]
-                            flatten_dict["sportTags"] = product_info["merchProduct"]["sportTags"]
-                            flatten_dict["modificationDate"] = product_info["merchProduct"]["modificationDate"]
-                            flatten_dict["view"] = ""
-                            flatten_dict["squarishURL"] = ""
-                        except Exception as e:
-                            pass
-                    if k == "merchPrice":
-                        try:
-                            for k,v in product_info["merchPrice"].items():
-                                if k == "msrp":
-                                    flatten_dict["msrp"] = product_info["merchPrice"]["msrp"]
-                                if k == "fullPrice":
-                                    flatten_dict["fullPrice"] = product_info["merchPrice"]["fullPrice"]
-                                if k == "currentPrice":
-                                    flatten_dict["currentPrice"] = product_info["merchPrice"]["currentPrice"]
-                        except Exception as e:
-                            pass
-                if response_object["publishedContent"]:
-                    for node in response_object["publishedContent"]["nodes"]:
-                        for k, v in node.items():
-                            if k == "nodes":
-                                for n_node in node["nodes"]:
-                                    if n_node["properties"]:
-                                        try:
-                                            if n_node["properties"]["squarish"]:
-                                                for k, v in n_node["properties"]["squarish"].items():
-                                                    if k == "view":
-                                                        flatten_dict["view"] = n_node["properties"]["squarish"]["view"]
-                                                    if k == "url":
-                                                        flatten_dict["squarishURL"] = n_node["properties"]["squarish"]["url"]
-                                            if not self.tap_state.get("identifiers"):
-                                                self.tap_state["identifiers"] = [flatten_dict["squarishURL"] +
-                                                                                 flatten_dict["modificationDate"]]
-                                                yield flatten_dict
-                                            elif flatten_dict["squarishURL"] + flatten_dict["modificationDate"] not in \
-                                                    self.tap_state["identifiers"]:
-                                                self.tap_state["identifiers"].append(flatten_dict["squarishURL"] +
-                                                                                     flatten_dict["modificationDate"])
-                                                yield flatten_dict
-                                        except Exception as e:
-                                            pass
+            if response_object.get("productInfo"):
+                for product_info in response_object["productInfo"]:
+                    for k, v in product_info.items():
+                        if k == "merchProduct":
+                            try:
+                                flatten_dict["merchGroup"] = product_info["merchProduct"]["merchGroup"]
+                                flatten_dict["styleCode"] = product_info["merchProduct"]["styleCode"]
+                                flatten_dict["colorCode"] = product_info["merchProduct"]["colorCode"]
+                                flatten_dict["channels"] = product_info["merchProduct"]["channels"]
+                                flatten_dict["genders"] = product_info["merchProduct"]["genders"]
+                                flatten_dict["sportTags"] = product_info["merchProduct"]["sportTags"]
+                                flatten_dict["modificationDate"] = product_info["merchProduct"]["modificationDate"]
+                                flatten_dict["view"] = ""
+                                flatten_dict["squarishURL"] = ""
+                            except Exception as e:
+                                pass
+                        if k == "merchPrice":
+                            try:
+                                for k,v in product_info["merchPrice"].items():
+                                    if k == "msrp":
+                                        flatten_dict["msrp"] = product_info["merchPrice"]["msrp"]
+                                    if k == "fullPrice":
+                                        flatten_dict["fullPrice"] = product_info["merchPrice"]["fullPrice"]
+                                    if k == "currentPrice":
+                                        flatten_dict["currentPrice"] = product_info["merchPrice"]["currentPrice"]
+                            except Exception as e:
+                                pass
+                    if response_object["publishedContent"]:
+                        for node in response_object["publishedContent"]["nodes"]:
+                            for k, v in node.items():
+                                if k == "nodes":
+                                    for n_node in node["nodes"]:
+                                        if n_node["properties"]:
+                                            try:
+                                                if n_node["properties"]["squarish"]:
+                                                    for k, v in n_node["properties"]["squarish"].items():
+                                                        if k == "view":
+                                                            flatten_dict["view"] = n_node["properties"]["squarish"]["view"]
+                                                        if k == "url":
+                                                            flatten_dict["squarishURL"] = n_node["properties"]["squarish"]["url"]
+                                                if not self.tap_state.get("identifiers"):
+                                                    self.tap_state["identifiers"] = [flatten_dict["squarishURL"] +
+                                                                                     flatten_dict["modificationDate"]]
+                                                    yield flatten_dict
+                                                elif flatten_dict["squarishURL"] + flatten_dict["modificationDate"] not in \
+                                                        self.tap_state["identifiers"]:
+                                                    self.tap_state["identifiers"].append(flatten_dict["squarishURL"] +
+                                                                                         flatten_dict["modificationDate"])
+                                                    yield flatten_dict
+                                            except Exception as e:
+                                                pass
