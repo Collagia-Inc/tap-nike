@@ -24,7 +24,7 @@ class UsersStream(nikeStream):
     # Optionally, you may also use `schema_filepath` in place of `schema`:
     schema = th.PropertiesList(
         th.Property(
-            "squarishURL",
+            "ITEM_IDENTIFIER",
             th.StringType,
         ),
         th.Property(
