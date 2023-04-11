@@ -1,8 +1,10 @@
 """REST client handling, including nikeStream base class."""
 
 from __future__ import annotations
+import os
 
 from pathlib import Path
+import pickle
 from typing import Any, Callable, Iterable
 
 import requests
@@ -30,12 +32,12 @@ class nikeStream(RESTStream):
             A dictionary of HTTP headers.
         """
         headers = {
-            'Host': 'api.nike.com',
-            'User-Agent': 'Chrome v22.2 Linux Ubuntu',
-            'Accept': '*/*',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Connection': 'keep-alive',
-            'X-Requested-With': 'XMLHttpRequest'
+            "Host": "api.nike.com",
+            "User-Agent": "Chrome v22.2 Linux Ubuntu",
+            "Accept": "*/*",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Connection": "keep-alive",
+            "X-Requested-With": "XMLHttpRequest",
         }
 
         return headers
@@ -85,7 +87,6 @@ class nikeStream(RESTStream):
         params["filter"] = f'language(en),marketplace(US),channelId({channel_id}),inStock(false),includeExpired(true)'
         return params
 
-
     def parse_response(self, response: requests.Response) -> Iterable[dict]:
         """Parse the response and return an iterator of result records.
 
@@ -95,6 +96,13 @@ class nikeStream(RESTStream):
         Yields:
             Each record from the source.
         """
+        tap_state = self.tap_state
+        state_store_path = "tap_nike/data/state.pkl"
+        if os.path.isfile(state_store_path):
+            with open(state_store_path, 'rb') as f:
+                tap_state = pickle.load(f)
+                # self.logger.info(f"Loaded state from {state_store_path}")
+                
         for response_object in response.json()["objects"]:
             flatten_dict = {}
             if response_object.get("productInfo"):
@@ -138,14 +146,17 @@ class nikeStream(RESTStream):
                                                             flatten_dict["view"] = n_node["properties"]["squarish"]["view"]
                                                         if k == "url":
                                                             flatten_dict["squarishURL"] = n_node["properties"]["squarish"]["url"]
-                                                if not self.tap_state.get("identifiers"):
-                                                    self.tap_state["identifiers"] = [flatten_dict["squarishURL"] +
+                                                if not tap_state.get("identifiers"):
+                                                    tap_state["identifiers"] = [flatten_dict["squarishURL"] +
                                                                                      flatten_dict["modificationDate"]]
                                                     yield flatten_dict
                                                 elif flatten_dict["squarishURL"] + flatten_dict["modificationDate"] not in \
-                                                        self.tap_state["identifiers"]:
-                                                    self.tap_state["identifiers"].append(flatten_dict["squarishURL"] +
+                                                        tap_state["identifiers"]:
+                                                    tap_state["identifiers"].append(flatten_dict["squarishURL"] +
                                                                                          flatten_dict["modificationDate"])
                                                     yield flatten_dict
                                             except Exception as e:
                                                 pass
+        with open(state_store_path, 'wb') as f:
+            pickle.dump(tap_state, f)
+            # self.logger.info(f"Saved state to {state_store_path}")
