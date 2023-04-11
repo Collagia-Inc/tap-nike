@@ -44,6 +44,10 @@ class UsersStream(nikeStream):
             th.StringType,
         ),
         th.Property(
+            "styleColor",
+            th.StringType,
+        ),
+        th.Property(
             "colorCode",
             th.StringType,
         ),

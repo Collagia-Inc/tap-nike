@@ -104,6 +104,7 @@ class nikeStream(RESTStream):
                             try:
                                 flatten_dict["merchGroup"] = product_info["merchProduct"]["merchGroup"]
                                 flatten_dict["styleCode"] = product_info["merchProduct"]["styleCode"]
+                                flatten_dict["styleColor"] = product_info["merchProduct"]["styleColor"]
                                 flatten_dict["colorCode"] = product_info["merchProduct"]["colorCode"]
                                 flatten_dict["channels"] = product_info["merchProduct"]["channels"]
                                 flatten_dict["genders"] = product_info["merchProduct"]["genders"]
