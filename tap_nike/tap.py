@@ -34,7 +34,9 @@ class Tapnike(Tap):
             A list of discovered streams.
         """
         return [
-            streams.UsersStream(self),
+            streams.NikeStream(self),
+            streams.SnkrsStream(self),
+            streams.NikeMobileStream(self),
         ]
 
 

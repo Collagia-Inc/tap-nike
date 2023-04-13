@@ -68,24 +68,24 @@ class nikeStream(RESTStream):
         else:
             return response.json()["pages"]["next"]
 
-    def get_url_params(
-        self,
-        context: dict | None,
-        next_page_token: Any | None,
-    ) -> dict[str, Any]:
-        """Return a dictionary of values to be used in URL parameterization.
-
-        Args:
-            context: The stream context.
-            next_page_token: The next page index or value.
-
-        Returns:
-            A dictionary of URL query parameters.
-        """
-        params: dict = {}
-        channel_id = self.config["channel_id"]
-        params["filter"] = f'language(en),marketplace(US),channelId({channel_id}),inStock(false),includeExpired(true)'
-        return params
+    # def get_url_params(
+    #     self,
+    #     context: dict | None,
+    #     next_page_token: Any | None,
+    # ) -> dict[str, Any]:
+    #     """Return a dictionary of values to be used in URL parameterization.
+    #
+    #     Args:
+    #         context: The stream context.
+    #         next_page_token: The next page index or value.
+    #
+    #     Returns:
+    #         A dictionary of URL query parameters.
+    #     """
+    #     params: dict = {}
+    #     channel_id = self.config["channel_id"]
+    #     params["filter"] = f'language(en),marketplace(US),channelId({channel_id}),inStock(false),includeExpired(true)'
+    #     return params
 
     def parse_response(self, response: requests.Response) -> Iterable[dict]:
         """Parse the response and return an iterator of result records.
@@ -155,6 +155,7 @@ class nikeStream(RESTStream):
                                                     tap_state["identifiers"].append(flatten_dict["ITEM_IDENTIFIER"] +
                                                                                          flatten_dict["modificationDate"])
                                                     yield flatten_dict
+
                                             except Exception as e:
                                                 pass
         with open(state_store_path, 'wb') as f:
