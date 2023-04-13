@@ -59,13 +59,10 @@ class nikeStream(RESTStream):
         # TODO: If pagination is required, return a token which can be used to get the
         #       next page. If this is the final page, return "None" to end the
         #       pagination loop.
-
-        if self.next_page_token == response.json()["pages"]["next"]:
-            return None
-        self.next_page_token = response.json()["pages"]["next"]
         if response.json()["pages"]["next"] == "":
             return None
         else:
+            self.path = response.json()["pages"]["next"]
             return response.json()["pages"]["next"]
 
     # def get_url_params(
@@ -107,57 +104,63 @@ class nikeStream(RESTStream):
             flatten_dict = {}
             if response_object.get("productInfo"):
                 for product_info in response_object["productInfo"]:
-                    for k, v in product_info.items():
-                        if k == "merchProduct":
-                            try:
-                                flatten_dict["merchGroup"] = product_info["merchProduct"]["merchGroup"]
-                                flatten_dict["styleCode"] = product_info["merchProduct"]["styleCode"]
-                                flatten_dict["styleColor"] = product_info["merchProduct"]["styleColor"]
-                                flatten_dict["colorCode"] = product_info["merchProduct"]["colorCode"]
-                                flatten_dict["channels"] = product_info["merchProduct"]["channels"]
-                                flatten_dict["genders"] = product_info["merchProduct"]["genders"]
-                                flatten_dict["sportTags"] = product_info["merchProduct"]["sportTags"]
-                                flatten_dict["modificationDate"] = product_info["merchProduct"]["modificationDate"]
-                                flatten_dict["view"] = ""
-                                flatten_dict["ITEM_IDENTIFIER"] = ""
-                            except Exception as e:
-                                pass
-                        if k == "merchPrice":
-                            try:
-                                for k,v in product_info["merchPrice"].items():
-                                    if k == "msrp":
-                                        flatten_dict["msrp"] = product_info["merchPrice"]["msrp"]
-                                    if k == "fullPrice":
-                                        flatten_dict["fullPrice"] = product_info["merchPrice"]["fullPrice"]
-                                    if k == "currentPrice":
-                                        flatten_dict["currentPrice"] = product_info["merchPrice"]["currentPrice"]
-                            except Exception as e:
-                                pass
-                    if response_object["publishedContent"]:
-                        for node in response_object["publishedContent"]["nodes"]:
-                            for k, v in node.items():
-                                if k == "nodes":
-                                    for n_node in node["nodes"]:
-                                        if n_node["properties"]:
-                                            try:
-                                                if n_node["properties"]["squarish"]:
-                                                    for k, v in n_node["properties"]["squarish"].items():
-                                                        if k == "view":
-                                                            flatten_dict["view"] = n_node["properties"]["squarish"]["view"]
-                                                        if k == "url":
-                                                            flatten_dict["ITEM_IDENTIFIER"] = n_node["properties"]["squarish"]["url"]
-                                                if not tap_state.get("identifiers"):
-                                                    tap_state["identifiers"] = [flatten_dict["ITEM_IDENTIFIER"] +
-                                                                                     flatten_dict["modificationDate"]]
-                                                    yield flatten_dict
-                                                elif flatten_dict["ITEM_IDENTIFIER"] + flatten_dict["modificationDate"] not in \
-                                                        tap_state["identifiers"]:
-                                                    tap_state["identifiers"].append(flatten_dict["ITEM_IDENTIFIER"] +
-                                                                                         flatten_dict["modificationDate"])
-                                                    yield flatten_dict
+                    try:
+                        for k, v in product_info.items():
+                            if k == "merchProduct":
+                                try:
+                                    flatten_dict["merchGroup"] = product_info["merchProduct"]["merchGroup"]
+                                    flatten_dict["styleCode"] = product_info["merchProduct"]["styleCode"]
+                                    flatten_dict["styleColor"] = product_info["merchProduct"]["styleColor"]
+                                    flatten_dict["colorCode"] = product_info["merchProduct"]["colorCode"]
+                                    flatten_dict["channels"] = product_info["merchProduct"]["channels"]
+                                    flatten_dict["genders"] = product_info["merchProduct"]["genders"]
+                                    flatten_dict["sportTags"] = product_info["merchProduct"]["sportTags"]
+                                    flatten_dict["modificationDate"] = product_info["merchProduct"]["modificationDate"]
+                                    flatten_dict["view"] = ""
+                                    flatten_dict["ITEM_IDENTIFIER"] = ""
+                                except Exception as e:
+                                    pass
+                            if k == "merchPrice":
+                                try:
+                                    for k,v in product_info["merchPrice"].items():
+                                        if k == "msrp":
+                                            flatten_dict["msrp"] = product_info["merchPrice"]["msrp"]
+                                        if k == "fullPrice":
+                                            flatten_dict["fullPrice"] = product_info["merchPrice"]["fullPrice"]
+                                        if k == "currentPrice":
+                                            flatten_dict["currentPrice"] = product_info["merchPrice"]["currentPrice"]
+                                except Exception as e:
+                                    pass
+                        if response_object["publishedContent"]:
+                            for node in response_object["publishedContent"]["nodes"]:
+                                try:
+                                    for k, v in node.items():
+                                        if k == "nodes":
+                                            for n_node in node["nodes"]:
+                                                if n_node["properties"]:
+                                                    try:
+                                                        if n_node["properties"]["squarish"]:
+                                                            for k, v in n_node["properties"]["squarish"].items():
+                                                                if k == "view":
+                                                                    flatten_dict["view"] = n_node["properties"]["squarish"]["view"]
+                                                                if k == "url":
+                                                                    flatten_dict["ITEM_IDENTIFIER"] = n_node["properties"]["squarish"]["url"]
+                                                        if not tap_state.get("identifiers"):
+                                                            tap_state["identifiers"] = [flatten_dict["ITEM_IDENTIFIER"] +
+                                                                                             flatten_dict["modificationDate"]]
+                                                            yield flatten_dict
+                                                        elif flatten_dict["ITEM_IDENTIFIER"] + flatten_dict["modificationDate"] not in \
+                                                                tap_state["identifiers"]:
+                                                            tap_state["identifiers"].append(flatten_dict["ITEM_IDENTIFIER"] +
+                                                                                                 flatten_dict["modificationDate"])
+                                                            yield flatten_dict
 
-                                            except Exception as e:
-                                                pass
+                                                    except Exception as e:
+                                                        pass
+                                except Exception as e:
+                                    pass
+                    except Exception as e:
+                        pass
         with open(state_store_path, 'wb') as f:
             pickle.dump(tap_state, f)
             # self.logger.info(f"Saved state to {state_store_path}")
