@@ -1,14 +1,14 @@
 """REST client handling, including nikeStream base class."""
 
 from __future__ import annotations
-import os
+import boto3
+from botocore.exceptions import ClientError
 
 from pathlib import Path
 import pickle
 from typing import Any, Callable, Iterable
 
 import requests
-from singer_sdk.helpers.jsonpath import extract_jsonpath
 from singer_sdk.streams import RESTStream
 
 _Auth = Callable[[requests.PreparedRequest], requests.PreparedRequest]
@@ -56,14 +56,10 @@ class nikeStream(RESTStream):
         Returns:
             The next pagination token.
         """
-        # TODO: If pagination is required, return a token which can be used to get the
-        #       next page. If this is the final page, return "None" to end the
-        #       pagination loop.
         if response.json()["pages"]["next"] == "":
             return None
-        else:
-            self.path = response.json()["pages"]["next"]
-            return response.json()["pages"]["next"]
+        self.path = response.json()["pages"]["next"]
+        return response.json()["pages"]["next"]
 
     # def get_url_params(
     #     self,
@@ -94,12 +90,20 @@ class nikeStream(RESTStream):
             Each record from the source.
         """
         tap_state = self.tap_state
-        state_store_path = "tap_nike/data/state.pkl"
-        if os.path.isfile(state_store_path):
-            with open(state_store_path, 'rb') as f:
-                tap_state = pickle.load(f)
-                # self.logger.info(f"Loaded state from {state_store_path}")
-                
+        s3 = boto3.client('s3')
+        bucket_name = 'meltano-state'
+        file_key = self.config["job_id"]
+        try:
+            resp = s3.head_object(Bucket=bucket_name, Key=file_key)
+        except ClientError:
+            pass
+        else:
+            # Load the object from S3 using pickle
+            resp = s3.get_object(Bucket=bucket_name, Key=file_key)
+            data = resp['Body'].read()
+            tap_state = pickle.loads(data)
+            # print(f"Loaded object: {tap_state}")
+
         for response_object in response.json()["objects"]:
             flatten_dict = {}
             if response_object.get("productInfo"):
@@ -150,7 +154,7 @@ class nikeStream(RESTStream):
                                                                                              flatten_dict["modificationDate"]]
                                                             yield flatten_dict
                                                         elif flatten_dict["ITEM_IDENTIFIER"] + flatten_dict["modificationDate"] not in \
-                                                                tap_state["identifiers"]:
+                                                                    tap_state["identifiers"]:
                                                             tap_state["identifiers"].append(flatten_dict["ITEM_IDENTIFIER"] +
                                                                                                  flatten_dict["modificationDate"])
                                                             yield flatten_dict
@@ -161,6 +165,8 @@ class nikeStream(RESTStream):
                                     pass
                     except Exception as e:
                         pass
-        with open(state_store_path, 'wb') as f:
-            pickle.dump(tap_state, f)
+        # with open(state_store_path, 'wb') as f:
+        #     pickle.dump(tap_state, f)
+        s3.put_object(Bucket=bucket_name, Key=file_key, Body=pickle.dumps(self.tap_state))
+
             # self.logger.info(f"Saved state to {state_store_path}")
