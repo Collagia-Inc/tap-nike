@@ -89,21 +89,19 @@ class nikeStream(RESTStream):
         Yields:
             Each record from the source.
         """
-        tap_state = self.tap_state
         s3 = boto3.client('s3')
         bucket_name = 'meltano-state'
         file_key = self.config["job_id"]
+        custom_state = {}
         try:
-            resp = s3.head_object(Bucket=bucket_name, Key=file_key)
-        except ClientError:
+            s3.head_object(Bucket=bucket_name, Key=file_key)
+        except ClientError as e:
             pass
         else:
             # Load the object from S3 using pickle
             resp = s3.get_object(Bucket=bucket_name, Key=file_key)
             data = resp['Body'].read()
-            tap_state = pickle.loads(data)
-            # print(f"Loaded object: {tap_state}")
-
+            custom_state = pickle.loads(data)
         for response_object in response.json()["objects"]:
             flatten_dict = {}
             if response_object.get("productInfo"):
@@ -149,13 +147,13 @@ class nikeStream(RESTStream):
                                                                     flatten_dict["view"] = n_node["properties"]["squarish"]["view"]
                                                                 if k == "url":
                                                                     flatten_dict["ITEM_IDENTIFIER"] = n_node["properties"]["squarish"]["url"]
-                                                        if not tap_state.get("identifiers"):
-                                                            tap_state["identifiers"] = [flatten_dict["ITEM_IDENTIFIER"] +
+                                                        if not custom_state.get("identifiers"):
+                                                            custom_state["identifiers"] = [flatten_dict["ITEM_IDENTIFIER"] +
                                                                                              flatten_dict["modificationDate"]]
                                                             yield flatten_dict
                                                         elif flatten_dict["ITEM_IDENTIFIER"] + flatten_dict["modificationDate"] not in \
-                                                                    tap_state["identifiers"]:
-                                                            tap_state["identifiers"].append(flatten_dict["ITEM_IDENTIFIER"] +
+                                                                    custom_state["identifiers"]:
+                                                            custom_state["identifiers"].append(flatten_dict["ITEM_IDENTIFIER"] +
                                                                                                  flatten_dict["modificationDate"])
                                                             yield flatten_dict
 
@@ -165,8 +163,6 @@ class nikeStream(RESTStream):
                                     pass
                     except Exception as e:
                         pass
-        # with open(state_store_path, 'wb') as f:
-        #     pickle.dump(tap_state, f)
-        s3.put_object(Bucket=bucket_name, Key=file_key, Body=pickle.dumps(self.tap_state))
+        s3.put_object(Bucket=bucket_name, Key=file_key, Body=pickle.dumps(custom_state))
 
             # self.logger.info(f"Saved state to {state_store_path}")
