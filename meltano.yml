@@ -16,14 +16,9 @@ plugins:
     - about
     - stream-maps
     settings:
-    - name: username
-    - name: password
-      kind: password
-    - name: start_date
-      value: '2010-01-01T00:00:00Z'
+    - name: job_id
     config:
       start_date: '2010-01-01T00:00:00Z'
-      job_id: 'test-job-id'
       # channel_id: "d9a5bc42-4b9c-4976-858a-f159cf99c647"
   loaders:
   - name: target-jsonl

@@ -3,7 +3,7 @@
 from __future__ import annotations
 import boto3
 from botocore.exceptions import ClientError
-
+import os
 from pathlib import Path
 import pickle
 from typing import Any, Callable, Iterable
@@ -118,7 +118,6 @@ class nikeStream(RESTStream):
                                     flatten_dict["genders"] = product_info["merchProduct"]["genders"]
                                     flatten_dict["sportTags"] = product_info["merchProduct"]["sportTags"]
                                     flatten_dict["modificationDate"] = product_info["merchProduct"]["modificationDate"]
-                                    flatten_dict["view"] = ""
                                     flatten_dict["ITEM_IDENTIFIER"] = ""
                                 except Exception as e:
                                     pass
@@ -143,18 +142,14 @@ class nikeStream(RESTStream):
                                                     try:
                                                         if n_node["properties"]["squarish"]:
                                                             for k, v in n_node["properties"]["squarish"].items():
-                                                                if k == "view":
-                                                                    flatten_dict["view"] = n_node["properties"]["squarish"]["view"]
                                                                 if k == "url":
                                                                     flatten_dict["ITEM_IDENTIFIER"] = n_node["properties"]["squarish"]["url"]
                                                         if not custom_state.get("identifiers"):
-                                                            custom_state["identifiers"] = [flatten_dict["ITEM_IDENTIFIER"] +
-                                                                                             flatten_dict["modificationDate"]]
+                                                            custom_state["identifiers"] = [flatten_dict["ITEM_IDENTIFIER"]]
                                                             yield flatten_dict
-                                                        elif flatten_dict["ITEM_IDENTIFIER"] + flatten_dict["modificationDate"] not in \
+                                                        elif flatten_dict["ITEM_IDENTIFIER"] not in \
                                                                     custom_state["identifiers"]:
-                                                            custom_state["identifiers"].append(flatten_dict["ITEM_IDENTIFIER"] +
-                                                                                                 flatten_dict["modificationDate"])
+                                                            custom_state["identifiers"].append(flatten_dict["ITEM_IDENTIFIER"])
                                                             yield flatten_dict
 
                                                     except Exception as e:
@@ -164,5 +159,3 @@ class nikeStream(RESTStream):
                     except Exception as e:
                         pass
         s3.put_object(Bucket=bucket_name, Key=file_key, Body=pickle.dumps(custom_state))
-
-            # self.logger.info(f"Saved state to {state_store_path}")

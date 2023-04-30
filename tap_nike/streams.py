@@ -19,16 +19,12 @@ class NikeStream(nikeStream):
 
     name = "nike"
     path = "product_feed/threads/v2?filter=language%28en%29&filter=marketplace%28US%29&filter=channelId%28d9a5bc42-4b9c-4976-858a-f159cf99c647%29&filter=inStock%28false%29&filter=includeExpired%28true%29&anchor=50"
-    primary_keys = ["squarishURL", "modificationDate"]
+    primary_keys = "ITEM_IDENTIFIER"
     replication_key = "modificationDate"
     # Optionally, you may also use `schema_filepath` in place of `schema`:
     schema = th.PropertiesList(
         th.Property(
             "ITEM_IDENTIFIER",
-            th.StringType,
-        ),
-        th.Property(
-            "view",
             th.StringType,
         ),
         th.Property(
@@ -88,7 +84,7 @@ class SnkrsStream(nikeStream):
 
     name = "Snkrs"
     path = "product_feed/threads/v2?filter=language%28en%29&filter=marketplace%28US%29&filter=channelId%28010794e5-35fe-4e32-aaff-cd2c74f89d61%29&filter=inStock%28false%29&filter=includeExpired%28true%29&anchor=50"
-    primary_keys = ["squarishURL", "modificationDate"]
+    primary_keys = "ITEM_IDENTIFIER"
     replication_key = "modificationDate"
     # Optionally, you may also use `schema_filepath` in place of `schema`:
     schema = th.PropertiesList(
@@ -158,7 +154,7 @@ class NikeMobileStream(nikeStream):
 
     name = "nike_mobile"
     path = "product_feed/threads/v2?filter=language%28en%29&filter=marketplace%28US%29&filter=channelId%2882a74ac1-c527-4470-b7b0-fb5f3ef3c2e2%29&filter=inStock%28false%29&filter=includeExpired%28true%29&anchor=50"
-    primary_keys = ["squarishURL", "modificationDate"]
+    primary_keys = "ITEM_IDENTIFIER"
     replication_key = "modificationDate"
     # Optionally, you may also use `schema_filepath` in place of `schema`:
     schema = th.PropertiesList(
