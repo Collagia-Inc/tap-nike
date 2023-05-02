@@ -1,6 +1,9 @@
 """REST client handling, including nikeStream base class."""
 
 from __future__ import annotations
+
+import logging
+
 import boto3
 from botocore.exceptions import ClientError
 import os
@@ -92,11 +95,12 @@ class nikeStream(RESTStream):
         s3 = boto3.client('s3')
         bucket_name = 'meltano-state'
         file_key = self.config["job_id"]
+        logging.info(f"######### FOLLOWING file key obtained {file_key}")
         custom_state = {}
         try:
             s3.head_object(Bucket=bucket_name, Key=file_key)
         except ClientError as e:
-            pass
+            logging.info(f"Exception occurred {e}")
         else:
             # Load the object from S3 using pickle
             resp = s3.get_object(Bucket=bucket_name, Key=file_key)
@@ -120,7 +124,7 @@ class nikeStream(RESTStream):
                                     flatten_dict["modificationDate"] = product_info["merchProduct"]["modificationDate"]
                                     flatten_dict["ITEM_IDENTIFIER"] = ""
                                 except Exception as e:
-                                    pass
+                                    logging.info(f"Exception occurred {e}")
                             if k == "merchPrice":
                                 try:
                                     for k,v in product_info["merchPrice"].items():
@@ -131,7 +135,7 @@ class nikeStream(RESTStream):
                                         if k == "currentPrice":
                                             flatten_dict["currentPrice"] = product_info["merchPrice"]["currentPrice"]
                                 except Exception as e:
-                                    pass
+                                    logging.info(f"Exception occurred {e}")
                         if response_object["publishedContent"]:
                             for node in response_object["publishedContent"]["nodes"]:
                                 try:
@@ -153,9 +157,9 @@ class nikeStream(RESTStream):
                                                             yield flatten_dict
 
                                                     except Exception as e:
-                                                        pass
+                                                        logging.info(f"Exception occurred {e}")
                                 except Exception as e:
-                                    pass
+                                    logging.info(f"Exception occurred {e}")
                     except Exception as e:
-                        pass
+                        logging.info(f"Exception occurred {e}")
         s3.put_object(Bucket=bucket_name, Key=file_key, Body=pickle.dumps(custom_state))
