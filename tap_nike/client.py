@@ -100,7 +100,7 @@ class nikeStream(RESTStream):
         try:
             s3.head_object(Bucket=bucket_name, Key=file_key)
         except ClientError as e:
-            logging.info(f"Exception occurred {e}")
+            logging.info(f"S3 init Exception occurred {e}")
         else:
             # Load the object from S3 using pickle
             resp = s3.get_object(Bucket=bucket_name, Key=file_key)
@@ -162,4 +162,8 @@ class nikeStream(RESTStream):
                                     logging.info(f"Exception occurred {e}")
                     except Exception as e:
                         logging.info(f"Exception occurred {e}")
-        s3.put_object(Bucket=bucket_name, Key=file_key, Body=pickle.dumps(custom_state))
+        try:
+            s3.put_object(Bucket=bucket_name, Key=file_key, Body=pickle.dumps(custom_state))
+        except Exception as e:
+            logging.info(f"S3 put exceptiob {e}")
+
