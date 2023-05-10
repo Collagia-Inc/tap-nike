@@ -46,24 +46,24 @@ class nikeStream(RESTStream):
 
         return headers
 
-    # def get_next_page_token(
-    #     self,
-    #     response: requests.Response,
-    #     previous_token: Any | None,
-    # ) -> Any | None:
-    #     """Return a token for identifying next page or None if no more pages.
-    #
-    #     Args:
-    #         response: The HTTP ``requests.Response`` object.
-    #         previous_token: The previous page token value.
-    #
-    #     Returns:
-    #         The next pagination token.
-    #     """
-    #     if response.json()["pages"]["next"] == "":
-    #         return None
-    #     self.path = response.json()["pages"]["next"]
-    #     return response.json()["pages"]["next"]
+    def get_next_page_token(
+        self,
+        response: requests.Response,
+        previous_token: Any | None,
+    ) -> Any | None:
+        """Return a token for identifying next page or None if no more pages.
+
+        Args:
+            response: The HTTP ``requests.Response`` object.
+            previous_token: The previous page token value.
+
+        Returns:
+            The next pagination token.
+        """
+        if response.json()["pages"]["next"] == "":
+            return None
+        self.path = response.json()["pages"]["next"]
+        return response.json()["pages"]["next"]
 
     # def get_url_params(
     #     self,
