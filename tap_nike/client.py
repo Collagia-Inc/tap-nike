@@ -13,6 +13,7 @@ from typing import Any, Callable, Iterable
 
 import requests
 from singer_sdk.streams import RESTStream
+import traceback
 
 _Auth = Callable[[requests.PreparedRequest], requests.PreparedRequest]
 SCHEMAS_DIR = Path(__file__).parent / Path("./schemas")
@@ -100,7 +101,8 @@ class nikeStream(RESTStream):
         try:
             s3.head_object(Bucket=bucket_name, Key=file_key)
         except ClientError as e:
-            logging.info(f"S3 init Exception occurred {e}")
+            logging.info(f"S3 init Exception occurred")
+            traceback.print_exc()
         else:
             # Load the object from S3 using pickle
             resp = s3.get_object(Bucket=bucket_name, Key=file_key)
@@ -124,7 +126,7 @@ class nikeStream(RESTStream):
                                     flatten_dict["modificationDate"] = product_info["merchProduct"]["modificationDate"]
                                     flatten_dict["ITEM_IDENTIFIER"] = ""
                                 except Exception as e:
-                                    logging.info(f"Exception occurred {e}")
+                                    traceback.print_exc()
                             if k == "merchPrice":
                                 try:
                                     for k,v in product_info["merchPrice"].items():
@@ -135,7 +137,7 @@ class nikeStream(RESTStream):
                                         if k == "currentPrice":
                                             flatten_dict["currentPrice"] = product_info["merchPrice"]["currentPrice"]
                                 except Exception as e:
-                                    logging.info(f"Exception occurred {e}")
+                                    traceback.print_exc()
                         if response_object["publishedContent"]:
                             for node in response_object["publishedContent"]["nodes"]:
                                 try:
@@ -155,15 +157,16 @@ class nikeStream(RESTStream):
                                                                     custom_state["identifiers"]:
                                                             custom_state["identifiers"].append(flatten_dict["ITEM_IDENTIFIER"])
                                                             yield flatten_dict
-
                                                     except Exception as e:
-                                                        logging.info(f"Exception occurred {e}")
+                                                        traceback.print_exc()
                                 except Exception as e:
-                                    logging.info(f"Exception occurred {e}")
+                                    traceback.print_exc()
                     except Exception as e:
-                        logging.info(f"Exception occurred {e}")
+                        traceback.print_exc()
+                        pass
         try:
             s3.put_object(Bucket=bucket_name, Key=file_key, Body=pickle.dumps(custom_state))
         except Exception as e:
-            logging.info(f"S3 put exceptiob {e}")
+            logging.info(f"S3 put exceptiob")
+            traceback.print_exc()
 
