@@ -27,7 +27,27 @@ class nikeStream(RESTStream):
     url_base = "https://api.nike.com/"
 
     records_jsonpath = "$[*]"  # Or override `parse_response`.
-    next_page_token = ""  # Or override `get_next_page_token`.
+    next_page_token = ""  # Or override `get_next_page_token`
+    file_key = "default_file_key"
+    bucket_name = 'meltano-state'
+    custom_state = {}
+
+    def initialise_state(self):
+        s3 = boto3.client('s3')
+        logging.info("CONFIG JOB ID OBTAINED")
+        logging.info(self.config["job_id"])
+        self.file_key = self.config["job_id"]
+        logging.info(f"######### FOLLOWING file key obtained {self.file_key}")
+        try:
+            s3.head_object(Bucket=self.bucket_name, Key=self.file_key)
+        except ClientError as e:
+            logging.info(f"S3 init Exception occurred")
+            traceback.print_exc()
+        else:
+            # Load the object from S3 using pickle
+            resp = s3.get_object(Bucket= self.bucket_name, Key=self.file_key)
+            data = resp['Body'].read()
+            self.custom_state = pickle.loads(data)
 
     @property
     def http_headers(self) -> dict:
@@ -61,9 +81,20 @@ class nikeStream(RESTStream):
         Returns:
             The next pagination token.
         """
+        if response.json()["pages"]["prev"] == "":
+            # first url, setting up the state.
+            self.initialise_state()
         if response.json()["pages"]["next"] == "":
+            #last url, wriitng state to s3
+            try:
+                s3 = boto3.client('s3')
+                s3.put_object(Bucket=self.bucket_name, Key=self.file_key, Body=pickle.dumps(self.custom_state))
+            except Exception as e:
+                logging.info(f"S3 put exception")
+                traceback.print_exc()
             return None
         self.path = response.json()["pages"]["next"]
+        logging.info(response.json()["pages"]["prev"])
         logging.info(f"$$$$$$$ pages updated here {self.path}")
         return response.json()["pages"]["next"]
 
@@ -95,21 +126,6 @@ class nikeStream(RESTStream):
         Yields:
             Each record from the source.
         """
-        s3 = boto3.client('s3')
-        bucket_name = 'meltano-state'
-        file_key = self.config["job_id"]
-        logging.info(f"######### FOLLOWING file key obtained {file_key}")
-        custom_state = {}
-        try:
-            s3.head_object(Bucket=bucket_name, Key=file_key)
-        except ClientError as e:
-            logging.info(f"S3 init Exception occurred")
-            traceback.print_exc()
-        else:
-            # Load the object from S3 using pickle
-            resp = s3.get_object(Bucket=bucket_name, Key=file_key)
-            data = resp['Body'].read()
-            custom_state = pickle.loads(data)
         for response_object in response.json()["objects"]:
             flatten_dict = {}
             if response_object.get("productInfo"):
@@ -152,12 +168,12 @@ class nikeStream(RESTStream):
                                                             for k, v in n_node["properties"]["squarish"].items():
                                                                 if k == "url":
                                                                     flatten_dict["ITEM_IDENTIFIER"] = n_node["properties"]["squarish"]["url"]
-                                                        if not custom_state.get("identifiers"):
-                                                            custom_state["identifiers"] = [flatten_dict["ITEM_IDENTIFIER"]]
+                                                        if not self.custom_state.get("identifiers"):
+                                                            self.custom_state["identifiers"] = [flatten_dict["ITEM_IDENTIFIER"]]
                                                             yield flatten_dict
                                                         elif flatten_dict["ITEM_IDENTIFIER"] not in \
-                                                                    custom_state["identifiers"]:
-                                                            custom_state["identifiers"].append(flatten_dict["ITEM_IDENTIFIER"])
+                                                                    self.custom_state["identifiers"]:
+                                                            self.custom_state["identifiers"].append(flatten_dict["ITEM_IDENTIFIER"])
                                                             yield flatten_dict
                                                     except Exception as e:
                                                         traceback.print_exc()
@@ -166,9 +182,4 @@ class nikeStream(RESTStream):
                     except Exception as e:
                         traceback.print_exc()
                         pass
-        try:
-            s3.put_object(Bucket=bucket_name, Key=file_key, Body=pickle.dumps(custom_state))
-        except Exception as e:
-            logging.info(f"S3 put exceptiob")
-            traceback.print_exc()
 
