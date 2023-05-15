@@ -64,7 +64,6 @@ class nikeStream(RESTStream):
         if response.json()["pages"]["next"] == "":
             return None
         self.path = response.json()["pages"]["next"]
-        time.sleep(120)
         logging.info(f"$$$$$$$ pages updated here {self.path}")
         return response.json()["pages"]["next"]
 
