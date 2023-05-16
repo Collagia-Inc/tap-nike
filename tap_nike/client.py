@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
@@ -65,6 +66,7 @@ class nikeStream(RESTStream):
         next_token = response.json()["pages"]["next"]
         logging.info(f"$$$$$$$ pages updated here {self.path} next token {next_token}")
         self.path = response.json()["pages"]["next"]
+        time.sleep(5)
         return response.json()["pages"]["next"]
 
 
@@ -120,7 +122,7 @@ class nikeStream(RESTStream):
                                                             for k, v in n_node["properties"]["squarish"].items():
                                                                 if k == "url":
                                                                     flatten_dict["ITEM_IDENTIFIER"] = n_node["properties"]["squarish"]["url"]
-                                                        yield flatten_dict
+                                                                     yield flatten_dict
                                                     except Exception as e:
                                                         traceback.print_exc()
                                 except Exception as e:
