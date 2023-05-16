@@ -122,7 +122,7 @@ class nikeStream(RESTStream):
                                                             for k, v in n_node["properties"]["squarish"].items():
                                                                 if k == "url":
                                                                     flatten_dict["ITEM_IDENTIFIER"] = n_node["properties"]["squarish"]["url"]
-                                                                     yield flatten_dict
+                                                                    yield flatten_dict
                                                     except Exception as e:
                                                         traceback.print_exc()
                                 except Exception as e:
