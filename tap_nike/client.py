@@ -87,7 +87,7 @@ class nikeStream(RESTStream):
                         for k, v in product_info.items():
                             if k == "merchProduct":
                                 try:
-                                    flatten_dict["next_token"] = response.json()["pages"]["next"]
+                                    flatten_dict["ITEM_IDENTIFIER"] = ""
                                     flatten_dict["merchGroup"] = product_info["merchProduct"]["merchGroup"]
                                     flatten_dict["styleCode"] = product_info["merchProduct"]["styleCode"]
                                     flatten_dict["styleColor"] = product_info["merchProduct"]["styleColor"]
@@ -96,7 +96,7 @@ class nikeStream(RESTStream):
                                     flatten_dict["genders"] = product_info["merchProduct"]["genders"]
                                     flatten_dict["sportTags"] = product_info["merchProduct"]["sportTags"]
                                     flatten_dict["modificationDate"] = product_info["merchProduct"]["modificationDate"]
-                                    flatten_dict["ITEM_IDENTIFIER"] = ""
+                                    flatten_dict["next_token"] = response.json()["pages"]["next"]
                                 except Exception as e:
                                     traceback.print_exc()
                             if k == "merchPrice":
