@@ -142,7 +142,9 @@ class nikeStream(RESTStream):
                                     flatten_dict["genders"] = product_info["merchProduct"]["genders"]
                                     flatten_dict["sportTags"] = product_info["merchProduct"]["sportTags"]
                                     flatten_dict["modificationDate"] = product_info["merchProduct"]["modificationDate"]
-                                    flatten_dict["ITEM_IDENTIFIER"] = ""
+                                    flatten_dict["msrp"] = ""
+                                    flatten_dict["fullPrice"] = ""
+                                    flatten_dict["currentPrice"] = ""
                                 except Exception as e:
                                     traceback.print_exc()
                             if k == "merchPrice":
