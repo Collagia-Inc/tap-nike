@@ -1,6 +1,8 @@
 """REST client handling, including nikeStream base class."""
 
 from __future__ import annotations
+from datetime import datetime
+import json
 
 import logging
 import time
@@ -35,19 +37,23 @@ class nikeStream(RESTStream):
     def initialise_state(self):
         s3 = boto3.client('s3')
         logging.info("CONFIG JOB ID OBTAINED")
-        logging.info(self.config["job_id"])
-        self.file_key = self.config["job_id"]
-        logging.info(f"######### FOLLOWING file key obtained {self.file_key}")
-        try:
-            s3.head_object(Bucket=self.bucket_name, Key=self.file_key)
-        except ClientError as e:
-            logging.info(f"S3 init Exception occurred")
-            traceback.print_exc()
-        else:
-            # Load the object from S3 using pickle
-            resp = s3.get_object(Bucket= self.bucket_name, Key=self.file_key)
-            data = resp['Body'].read()
-            self.custom_state = pickle.loads(data)
+
+        for key, value in self.config.items():
+            logging.info(f'{key}: {value}')
+
+        # logging.info(self.config["job_id"])
+        # self.file_key = self.config["job_id"]
+        # logging.info(f"######### FOLLOWING file key obtained {self.file_key}")
+        # try:
+        #     s3.head_object(Bucket=self.bucket_name, Key=self.file_key)
+        # except ClientError as e:
+        #     logging.info(f"S3 init Exception occurred")
+        #     traceback.print_exc()
+        # else:
+        #     # Load the object from S3 using pickle
+        #     resp = s3.get_object(Bucket= self.bucket_name, Key=self.file_key)
+        #     data = resp['Body'].read()
+        #     self.custom_state = pickle.loads(data)
 
     @property
     def http_headers(self) -> dict:
@@ -87,8 +93,11 @@ class nikeStream(RESTStream):
         if response.json()["pages"]["next"] == "":
             #last url, wriitng state to s3
             try:
-                s3 = boto3.client('s3')
-                s3.put_object(Bucket=self.bucket_name, Key=self.file_key, Body=pickle.dumps(self.custom_state))
+                # s3 = boto3.client('s3')
+                # s3.put_object(Bucket=self.bucket_name, Key=self.file_key, Body=pickle.dumps(self.custom_state))
+
+                with open('output/data.json', 'w') as json_file:
+                    json.dump(self.custom_state, json_file, indent=4)
             except Exception as e:
                 logging.info(f"S3 put exception")
                 traceback.print_exc()
@@ -117,6 +126,46 @@ class nikeStream(RESTStream):
     #     params["filter"] = f'language(en),marketplace(US),channelId({channel_id}),inStock(false),includeExpired(true)'
     #     return params
 
+    # def get_url_params(self, context, next_page_token):
+    #     params = {}
+
+    #     starting_date = self.get_starting_timestamp(context)
+    #     if starting_date:
+    #         params["after"] = starting_date.isoformat()
+
+    #     if next_page_token is not None:
+    #         params["page"] = next_page_token
+
+    #     self.logger.info("QUERY PARAMS: %s", params)
+    #     return params
+
+    def post_process(self, row: dict, context: dict | None = None) -> dict | None:
+        
+        logging.info("post_process")
+        starting_date = self.get_starting_replication_key_value(context)
+        modification_date = row["modificationDate"]
+
+        if starting_date and modification_date:
+            start_date_without_z = starting_date.rstrip('Z')
+            start_date_obj = datetime.fromisoformat(start_date_without_z)
+            start_Date = start_date_obj.isoformat()
+
+            mod_date_without_z = modification_date.rstrip('Z')
+            mod_date_object = datetime.fromisoformat(mod_date_without_z)
+            mod_date = mod_date_object.isoformat()
+            logging.info(f"post_process: start date: {start_Date}, mod date: {mod_date}")
+
+            if mod_date >= start_Date:
+                logging.info(f"post_process: include row")
+                return row
+            else:
+                logging.info(f"post_process: exclude row")
+                return None
+        else:
+            logging.info("post_process: no start date or mod date")
+            return row
+        
+    
     def parse_response(self, response: requests.Response) -> Iterable[dict]:
         """Parse the response and return an iterator of result records.
 
