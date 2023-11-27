@@ -117,19 +117,6 @@ class nikeStream(RESTStream):
     #     params["filter"] = f'language(en),marketplace(US),channelId({channel_id}),inStock(false),includeExpired(true)'
     #     return params
 
-    # def get_url_params(self, context, next_page_token):
-    #     params = {}
-
-    #     starting_date = self.get_starting_timestamp(context)
-    #     if starting_date:
-    #         params["after"] = starting_date.isoformat()
-
-    #     if next_page_token is not None:
-    #         params["page"] = next_page_token
-
-    #     self.logger.info("QUERY PARAMS: %s", params)
-    #     return params
-
     def post_process(self, row: dict, context: dict | None = None) -> dict | None:
         
         logging.info("post_process")
