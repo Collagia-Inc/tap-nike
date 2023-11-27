@@ -18,7 +18,7 @@ plugins:
     settings:
     - name: job_id
     config:
-      start_date: "2023-11-05"
+      start_date: '2010-01-01T00:00:00Z'
       # channel_id: "d9a5bc42-4b9c-4976-858a-f159cf99c647"
   loaders:
   - name: target-jsonl
