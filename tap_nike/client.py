@@ -1,9 +1,9 @@
 """REST client handling, including nikeStream base class."""
 
 from __future__ import annotations
+from datetime import datetime
 
 import logging
-import time
 
 import boto3
 from botocore.exceptions import ClientError
@@ -117,6 +117,33 @@ class nikeStream(RESTStream):
     #     params["filter"] = f'language(en),marketplace(US),channelId({channel_id}),inStock(false),includeExpired(true)'
     #     return params
 
+    def post_process(self, row: dict, context: dict | None = None) -> dict | None:
+        
+        logging.info("post_process")
+        starting_date = self.get_starting_replication_key_value(context)
+        modification_date = row["modificationDate"]
+
+        if starting_date and modification_date:
+            start_date_without_z = starting_date.rstrip('Z')
+            start_date_obj = datetime.fromisoformat(start_date_without_z)
+            start_Date = start_date_obj.isoformat()
+
+            mod_date_without_z = modification_date.rstrip('Z')
+            mod_date_object = datetime.fromisoformat(mod_date_without_z)
+            mod_date = mod_date_object.isoformat()
+            logging.info(f"post_process: start date: {start_Date}, mod date: {mod_date}")
+
+            if mod_date >= start_Date:
+                logging.info(f"post_process: include row")
+                return row
+            else:
+                logging.info(f"post_process: exclude row")
+                return None
+        else:
+            logging.info("post_process: no start date or mod date")
+            return row
+        
+    
     def parse_response(self, response: requests.Response) -> Iterable[dict]:
         """Parse the response and return an iterator of result records.
 
