@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 from datetime import datetime
-import json
 
 import logging
-import time
 
 import boto3
 from botocore.exceptions import ClientError
@@ -37,23 +35,19 @@ class nikeStream(RESTStream):
     def initialise_state(self):
         s3 = boto3.client('s3')
         logging.info("CONFIG JOB ID OBTAINED")
-
-        for key, value in self.config.items():
-            logging.info(f'{key}: {value}')
-
-        # logging.info(self.config["job_id"])
-        # self.file_key = self.config["job_id"]
-        # logging.info(f"######### FOLLOWING file key obtained {self.file_key}")
-        # try:
-        #     s3.head_object(Bucket=self.bucket_name, Key=self.file_key)
-        # except ClientError as e:
-        #     logging.info(f"S3 init Exception occurred")
-        #     traceback.print_exc()
-        # else:
-        #     # Load the object from S3 using pickle
-        #     resp = s3.get_object(Bucket= self.bucket_name, Key=self.file_key)
-        #     data = resp['Body'].read()
-        #     self.custom_state = pickle.loads(data)
+        logging.info(self.config["job_id"])
+        self.file_key = self.config["job_id"]
+        logging.info(f"######### FOLLOWING file key obtained {self.file_key}")
+        try:
+            s3.head_object(Bucket=self.bucket_name, Key=self.file_key)
+        except ClientError as e:
+            logging.info(f"S3 init Exception occurred")
+            traceback.print_exc()
+        else:
+            # Load the object from S3 using pickle
+            resp = s3.get_object(Bucket= self.bucket_name, Key=self.file_key)
+            data = resp['Body'].read()
+            self.custom_state = pickle.loads(data)
 
     @property
     def http_headers(self) -> dict:
@@ -93,11 +87,8 @@ class nikeStream(RESTStream):
         if response.json()["pages"]["next"] == "":
             #last url, wriitng state to s3
             try:
-                # s3 = boto3.client('s3')
-                # s3.put_object(Bucket=self.bucket_name, Key=self.file_key, Body=pickle.dumps(self.custom_state))
-
-                with open('output/data.json', 'w') as json_file:
-                    json.dump(self.custom_state, json_file, indent=4)
+                s3 = boto3.client('s3')
+                s3.put_object(Bucket=self.bucket_name, Key=self.file_key, Body=pickle.dumps(self.custom_state))
             except Exception as e:
                 logging.info(f"S3 put exception")
                 traceback.print_exc()
